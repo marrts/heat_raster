@@ -42,7 +42,7 @@ public:
    * @param keep_xsign If false the xais is align with the direction of motion. If true it will keep the xaxis point in
    * the same relative direction as the input trajectory.
    */
-  SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, double point_spacing, bool keep_xsign = false);
+  SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, double point_spacing, bool align_x_to_next = false);
   virtual ~SmoothPoseTraj() = default;
 
   /**
@@ -62,7 +62,7 @@ private:
   void qnormalize(geometry_msgs::Pose& P);
 
   double point_spacing_, total_distance_, max_t_;
-  bool keep_xsign_{ false };
+  bool align_x_to_next_{ false };
   double align_sign_{ 1 };
 
   boost::math::cubic_b_spline<double> sx_;

@@ -104,8 +104,9 @@ geometry_msgs::Pose SmoothPoseTraj::getNPtAveragePose(const geometry_msgs::PoseA
   return (p);
 }
 
-SmoothPoseTraj::SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, double point_spacing, bool keep_xsign)
+SmoothPoseTraj::SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, double point_spacing, bool align_x_to_next)
   : point_spacing_(point_spacing)
+  , align_x_to_next_(align_x_to_next)
 {
   // fit spline to each component
   std::vector<double> x, y, z, qx, qy, qz, qw;
@@ -261,7 +262,8 @@ bool SmoothPoseTraj::process(geometry_msgs::PoseArray& output_poses, double poin
   if (output_poses.poses.size() < 2)
     output_poses.poses.push_back(getPoseAtCrowDistance(t, point_spacing, max_t_));
 
-//  align_x_to_next(output_poses);
+  if (align_x_to_next_)
+    align_x_to_next(output_poses);
   return (true);
 }  // end process()
 
