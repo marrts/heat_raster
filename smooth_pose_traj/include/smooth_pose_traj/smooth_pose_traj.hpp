@@ -27,6 +27,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
 #include <boost/math/interpolators/cubic_b_spline.hpp>
+#include <eigen3/Eigen/Eigen>
 
 namespace smooth_pose_traj
 {
@@ -58,12 +59,16 @@ private:
   geometry_msgs::Pose interpPose(const geometry_msgs::Pose& P1, const geometry_msgs::Pose& P2, double alpha);
   geometry_msgs::Pose getPoseAtCrowDistance(double& t, double point_spacing, double& actual_distance);
   geometry_msgs::Pose getNPtAveragePose(const geometry_msgs::PoseArray& input_poses, int pose_index, int n_pts);
+  std::size_t findClosest(const Eigen::Vector3d& pose);
   bool align_x_to_next(geometry_msgs::PoseArray& poses);
   void qnormalize(geometry_msgs::Pose& P);
 
   double point_spacing_, total_distance_, max_t_;
   bool align_x_to_next_{ false };
   double align_sign_{ 1 };
+
+  std::vector<double> x_, y_, z_;
+  std::vector<double> qx_, qy_, qz_, qw_;
 
   boost::math::cubic_b_spline<double> sx_;
   boost::math::cubic_b_spline<double> sy_;
