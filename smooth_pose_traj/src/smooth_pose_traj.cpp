@@ -103,19 +103,13 @@ geometry_msgs::Pose SmoothPoseTraj::getNPtAveragePose(const geometry_msgs::PoseA
   return (p);
 }
 
-SmoothPoseTraj::SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, double point_spacing, bool align_x_to_next)
+SmoothPoseTraj::SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, double point_spacing, bool align_x_to_next, bool flip_direction)
   : point_spacing_(point_spacing)
   , align_x_to_next_(align_x_to_next)
+  , flip_direction_(flip_direction)
 {
   // fit spline to each component
-//  std::vector<double> x, y, z, qx, qy, qz, qw;
-  x_.clear();
-  y_.clear();
-  z_.clear();
-  qx_.clear();
-  qy_.clear();
-  qz_.clear();
-  qw_.clear();
+  std::vector<double> x, y, z, qx, qy, qz, qw;
   int n = static_cast<int>(input_poses.poses.size());
 
   // Its a mess to handle all the short path cases. Here I just inserted extra points so the spline will run.
@@ -125,13 +119,13 @@ SmoothPoseTraj::SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, doub
     {
       double alpha = i / 4;
       geometry_msgs::Pose p = interpPose(input_poses.poses[0], input_poses.poses[1], alpha);
-      x_.push_back(p.position.x);
-      y_.push_back(p.position.y);
-      z_.push_back(p.position.z);
-      qx_.push_back(p.orientation.x);
-      qy_.push_back(p.orientation.y);
-      qz_.push_back(p.orientation.z);
-      qw_.push_back(p.orientation.w);
+      x.push_back(p.position.x);
+      y.push_back(p.position.y);
+      z.push_back(p.position.z);
+      qx.push_back(p.orientation.x);
+      qy.push_back(p.orientation.y);
+      qz.push_back(p.orientation.z);
+      qw.push_back(p.orientation.w);
     }
   }
   else if (n == 3)  // insert one point between each pair to make 5
@@ -140,25 +134,25 @@ SmoothPoseTraj::SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, doub
     {
       double alpha = i / 2;
       geometry_msgs::Pose p = interpPose(input_poses.poses[0], input_poses.poses[1], alpha);
-      x_.push_back(p.position.x);
-      y_.push_back(p.position.y);
-      z_.push_back(p.position.z);
-      qx_.push_back(p.orientation.x);
-      qy_.push_back(p.orientation.y);
-      qz_.push_back(p.orientation.z);
-      qw_.push_back(p.orientation.w);
+      x.push_back(p.position.x);
+      y.push_back(p.position.y);
+      z.push_back(p.position.z);
+      qx.push_back(p.orientation.x);
+      qy.push_back(p.orientation.y);
+      qz.push_back(p.orientation.z);
+      qw.push_back(p.orientation.w);
     }
     for (int i = 1; i < 3; i++)
     {
       double alpha = i / 2;
       geometry_msgs::Pose p = interpPose(input_poses.poses[1], input_poses.poses[2], alpha);
-      x_.push_back(p.position.x);
-      y_.push_back(p.position.y);
-      z_.push_back(p.position.z);
-      qx_.push_back(p.orientation.x);
-      qy_.push_back(p.orientation.y);
-      qz_.push_back(p.orientation.z);
-      qw_.push_back(p.orientation.w);
+      x.push_back(p.position.x);
+      y.push_back(p.position.y);
+      z.push_back(p.position.z);
+      qx.push_back(p.orientation.x);
+      qy.push_back(p.orientation.y);
+      qz.push_back(p.orientation.z);
+      qw.push_back(p.orientation.w);
     }
   }
   else if (n == 4)  // here we add a point between every pair and get 7 total points
@@ -167,37 +161,37 @@ SmoothPoseTraj::SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, doub
     {
       double alpha = i / 2;
       geometry_msgs::Pose p = interpPose(input_poses.poses[0], input_poses.poses[1], alpha);
-      x_.push_back(p.position.x);
-      y_.push_back(p.position.y);
-      z_.push_back(p.position.z);
-      qx_.push_back(p.orientation.x);
-      qy_.push_back(p.orientation.y);
-      qz_.push_back(p.orientation.z);
-      qw_.push_back(p.orientation.w);
+      x.push_back(p.position.x);
+      y.push_back(p.position.y);
+      z.push_back(p.position.z);
+      qx.push_back(p.orientation.x);
+      qy.push_back(p.orientation.y);
+      qz.push_back(p.orientation.z);
+      qw.push_back(p.orientation.w);
     }
     for (int i = 1; i < 3; i++)
     {
       double alpha = i / 2;
       geometry_msgs::Pose p = interpPose(input_poses.poses[1], input_poses.poses[2], alpha);
-      x_.push_back(p.position.x);
-      y_.push_back(p.position.y);
-      z_.push_back(p.position.z);
-      qx_.push_back(p.orientation.x);
-      qy_.push_back(p.orientation.y);
-      qz_.push_back(p.orientation.z);
-      qw_.push_back(p.orientation.w);
+      x.push_back(p.position.x);
+      y.push_back(p.position.y);
+      z.push_back(p.position.z);
+      qx.push_back(p.orientation.x);
+      qy.push_back(p.orientation.y);
+      qz.push_back(p.orientation.z);
+      qw.push_back(p.orientation.w);
     }
     for (int i = 1; i < 3; i++)
     {
       double alpha = i / 2;
       geometry_msgs::Pose p = interpPose(input_poses.poses[2], input_poses.poses[3], alpha);
-      x_.push_back(p.position.x);
-      y_.push_back(p.position.y);
-      z_.push_back(p.position.z);
-      qx_.push_back(p.orientation.x);
-      qy_.push_back(p.orientation.y);
-      qz_.push_back(p.orientation.z);
-      qw_.push_back(p.orientation.w);
+      x.push_back(p.position.x);
+      y.push_back(p.position.y);
+      z.push_back(p.position.z);
+      qx.push_back(p.orientation.x);
+      qy.push_back(p.orientation.y);
+      qz.push_back(p.orientation.z);
+      qw.push_back(p.orientation.w);
     }
   }
   else  // 5 or more, and the spline works fine, just add all the points
@@ -205,55 +199,25 @@ SmoothPoseTraj::SmoothPoseTraj(const geometry_msgs::PoseArray& input_poses, doub
     for (int i = 0; i < n; i++)
     {
       geometry_msgs::Pose p = getNPtAveragePose(input_poses, i, 9);
-      x_.push_back(p.position.x);
-      y_.push_back(p.position.y);
-      z_.push_back(p.position.z);
-      qx_.push_back(p.orientation.x);
-      qy_.push_back(p.orientation.y);
-      qz_.push_back(p.orientation.z);
-      qw_.push_back(p.orientation.w);
+      x.push_back(p.position.x);
+      y.push_back(p.position.y);
+      z.push_back(p.position.z);
+      qx.push_back(p.orientation.x);
+      qy.push_back(p.orientation.y);
+      qz.push_back(p.orientation.z);
+      qw.push_back(p.orientation.w);
     }
   }
-  auto find_max_min = [](const std::vector<double>& vec, std::string name)
-  {
-    double min = 9999, max = 0.0, min_i = 0, max_i = 0;
-    for (std::size_t i = 0; i < vec.size() - 1; i++)
-    {
-      double diff = abs(vec[i+1] - vec[i]);
-      if (diff < min)
-      {
-        min = diff;
-        min_i = i;
-      }
-      if (diff > max)
-      {
-        max = diff;
-        max_i = i;
-      }
-    }
-    std::cout << "\033[1;43;36m";
-    std::cout << name << ": max diff of " << max << " at " << max_i << ", min diff of " << min << " at " << min_i;
-    std::cout << "\033[0m" << std::endl;
-  };
-  std::cout << "\nSTART" << std::endl;
-  find_max_min(x_, "x");
-  find_max_min(y_, "y");
-  find_max_min(z_, "z");
-  find_max_min(qx_, "qx");
-  find_max_min(qy_, "qy");
-  find_max_min(qz_, "qz");
-  find_max_min(qw_, "qw");
-  std::cout << std::endl;
 
-  max_t_ = static_cast<double>(x_.size() - 1);
+  max_t_ = static_cast<double>(x.size() - 1);
 
-  sx_ = boost::math::cubic_b_spline<double>(x_.begin(), x_.end(), 0.0, 1.0);
-  sy_ = boost::math::cubic_b_spline<double>(y_.begin(), y_.end(), 0.0, 1.0);
-  sz_ = boost::math::cubic_b_spline<double>(z_.begin(), z_.end(), 0.0, 1.0);
-  sqx_ = boost::math::cubic_b_spline<double>(qx_.begin(), qx_.end(), 0.0, 1.0);
-  sqy_ = boost::math::cubic_b_spline<double>(qy_.begin(), qy_.end(), 0.0, 1.0);
-  sqz_ = boost::math::cubic_b_spline<double>(qz_.begin(), qz_.end(), 0.0, 1.0);
-  sqw_ = boost::math::cubic_b_spline<double>(qw_.begin(), qw_.end(), 0.0, 1.0);
+  sx_ = boost::math::cubic_b_spline<double>(x.begin(), x.end(), 0.0, 1.0);
+  sy_ = boost::math::cubic_b_spline<double>(y.begin(), y.end(), 0.0, 1.0);
+  sz_ = boost::math::cubic_b_spline<double>(z.begin(), z.end(), 0.0, 1.0);
+  sqx_ = boost::math::cubic_b_spline<double>(qx.begin(), qx.end(), 0.0, 1.0);
+  sqy_ = boost::math::cubic_b_spline<double>(qy.begin(), qy.end(), 0.0, 1.0);
+  sqz_ = boost::math::cubic_b_spline<double>(qz.begin(), qz.end(), 0.0, 1.0);
+  sqw_ = boost::math::cubic_b_spline<double>(qw.begin(), qw.end(), 0.0, 1.0);
 
   Eigen::Vector3d pi(sx_(0.0), sy_(0), sz_(0));
   total_distance_ = 0.0;
@@ -274,7 +238,6 @@ bool SmoothPoseTraj::process(geometry_msgs::PoseArray& output_poses, double poin
 
   // add start pose
   Eigen::Quaterniond Q(sqw_(0), sqx_(0), sqy_(0), sqz_(0));
-//  Q.normalize();
   geometry_msgs::Pose P1;
   P1.position.x = sx_(0);
   P1.position.y = sy_(0);
@@ -338,32 +301,19 @@ bool SmoothPoseTraj::align_x_to_next(geometry_msgs::PoseArray& poses)
     R.col(1) = y_axis;
     R.col(2) = z_axis;
 
+    if (flip_direction_)
+    {
+      R = R * Eigen::AngleAxisd(3.1415, Eigen::Vector3d::UnitZ());
+    }
+
     // convert rotation matrix to quat
     Eigen::Quaterniond Q2(R);
-//    Q2.normalize();
     poses.poses[i].orientation.w = Q2.w();
     poses.poses[i].orientation.x = Q2.x();
     poses.poses[i].orientation.y = Q2.y();
     poses.poses[i].orientation.z = Q2.z();
   }
   return (true);
-}
-
-std::size_t SmoothPoseTraj::findClosest(const Eigen::Vector3d& pose)
-{
-  std::size_t min_i = 0;
-  double min_dist = std::numeric_limits<double>::max();
-  for (std::size_t i = 0; i < x_.size(); i++)
-  {
-    Eigen::Vector3d pose_real(x_[i], y_[i], z_[i]);
-    double dist = (pose - pose_real).norm();
-    if (dist < min_dist)
-    {
-      min_dist = dist;
-      min_i = i;
-    }
-  }
-  return min_i;
 }
 
 geometry_msgs::Pose SmoothPoseTraj::getPoseAtCrowDistance(double& t, double point_spacing, double& actual_distance)
@@ -383,23 +333,7 @@ geometry_msgs::Pose SmoothPoseTraj::getPoseAtCrowDistance(double& t, double poin
     t = max_t_;
 
   Eigen::Quaterniond Q(sqw_(t), sqx_(t), sqy_(t), sqz_(t));
-//  Q.normalize();
 
-  Eigen::Vector3d sampled_pose(sx_(t), sy_(t), sz_(t));
-  std::size_t closest_i = findClosest(sampled_pose);
-  Eigen::Quaterniond real_Q(qw_[closest_i], qx_[closest_i], qy_[closest_i], qz_[closest_i]);
-
-  double rot_dist = Q.angularDistance(real_Q);
-
-  if (rot_dist > 0.1)
-  {
-//    Q = real_Q;
-    std::cout << "\033[1;32m";
-    std::cout << "rotation distance of " << rot_dist << " at t: " << t << " found " << std::endl;
-    std::cout << "original values: (" << qw_[closest_i] << ", " << qx_[closest_i] << ", " << qy_[closest_i] << ", " << qz_[closest_i] << ")" << std::endl;
-    std::cout << "pre-norm values: (" << sqw_(t) << "," << sqx_(t) << "," << sqy_(t) << "," << sqz_(t) << ")" << std::endl;
-    std::cout << "\033[0m" << std::endl;
-  }
 
   P.position.x = sx_(t);
   P.position.y = sy_(t);
